@@ -1,17 +1,26 @@
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+import logging
 import pickle
 import os
+from pathlib import Path
+
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+logger = logging.getLogger(__name__)
+
+#login.py -> scrapers -> src -> project root
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_COOKIE_FILE = PROJECT_ROOT / "data" / "amazon_cookies.pkl"
 
 
 def get_driver():
     options = Options()
-    options.add_argument("--start-maximized") 
+    options.add_argument("--start-maximized")
     options.add_argument("--disable-blink-features=AutomationControlled")
     return webdriver.Chrome(options=options)
 
 
-def auto_login(driver, cookie_file="amazon_cookies.pkl"):
+def auto_login(driver, cookie_file=DEFAULT_COOKIE_FILE):
 
     if not os.path.exists(cookie_file):
         raise FileNotFoundError(
@@ -28,4 +37,4 @@ def auto_login(driver, cookie_file="amazon_cookies.pkl"):
 
     driver.refresh()
 
-    print("Amazon login successful")
+    logger.info("Amazon login successful")

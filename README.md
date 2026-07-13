@@ -10,7 +10,7 @@ Scrape Amazon product listings and customer reviews, store them locally, and **a
 
 - **Flexible scraping** — pull data from a single product URL, a bulk list of URLs (Excel upload), or a live Amazon keyword search.
 - **Two data types, one flow** — product details (title, price, rating, description) and customer reviews (author, rating, date, review text) are scraped, stored, and indexed side by side.
-- **Persistent storage** — everything lands in a local SQLite database (`amazon_data.db`), so re-running scrapes updates existing rows instead of duplicating them.
+- **Persistent storage** — everything lands in a local SQLite database (`data/amazon_data.db`), so re-running scrapes updates existing rows instead of duplicating them.
 - **RAG over both collections** — products and reviews are embedded into separate Chroma vector stores, each queried with a **self-query retriever** so the LLM can translate a natural-language question into metadata filters (e.g. *"reviews rated below 3 stars"*, *"products under ₹500"*) automatically.
 - **One-click reindexing** — a "Rebuild Index" button in the UI re-embeds new data without restarting the app.
 - **Cookie-based auto-login** — reuses a saved Amazon session instead of scripting credentials, and skips CAPTCHA/2FA friction.
@@ -29,7 +29,7 @@ flowchart LR
 
     D --> B
     D --> C
-    B --> E[(SQLite<br/>amazon_data.db)]
+    B --> E[(SQLite<br/>data/amazon_data.db)]
     C --> E
 
     E --> F[Product Documents]
@@ -67,13 +67,19 @@ flowchart LR
 
 ```
 RAG/
-├── frontend.py                 # Streamlit app — scraping UI + RAG chat UI
-├── amazon_login.py              # Selenium driver setup + cookie-based auto-login
-├── product_page_scrape.py       # Scrapes a single product detail page
-├── customer_reviews_scrape.py   # Scrapes all reviews for a product (dynamic & paginated)
-├── keyword_search_scrape.py     # Scrapes product listings for a search keyword
-├── database.py                  # SQLite schema, save/load for products & reviews
-├── rag_pipeline.py              # Document loading, vector stores, retrievers, LLM answering
+├── app.py                       # Streamlit app — scraping UI + RAG chat UI
+├── src/
+│   ├── scrapers/
+│   │   ├── login.py             # Selenium driver setup + cookie-based auto-login
+│   │   ├── product_page.py      # Scrapes a single product detail page
+│   │   ├── reviews.py           # Scrapes all reviews for a product (dynamic & paginated)
+│   │   └── keyword_search.py    # Scrapes product listings for a search keyword
+│   ├── storage/
+│   │   └── database.py          # SQLite schema, save/load for products & reviews
+│   └── rag/
+│       └── pipeline.py          # Document loading, vector stores, retrievers, LLM answering
+├── data/                        # amazon_data.db, amazon_cookies.pkl (git-ignored)
+├── chroma_store/                # Persisted Chroma vector stores (git-ignored)
 ├── requirements.txt
 └── .env                         # OPENAI_API_KEY (not committed)
 ```
@@ -103,12 +109,18 @@ OPENAI_API_KEY=your_key_here
 ```
 
 ### 3. Provide an Amazon session
-Scraping relies on a logged-in session saved as browser cookies. Generate `amazon_cookies.pkl` once by logging into `amazon.in` in a Selenium-controlled Chrome session and pickling `driver.get_cookies()`. Place the file in the project root — `amazon_login.py` loads it automatically on each run.
+Scraping relies on a logged-in session saved as browser cookies. Generate `amazon_cookies.pkl` once by logging into `amazon.in` in a Selenium-controlled Chrome session and pickling `driver.get_cookies()`. Place the file at `data/amazon_cookies.pkl` — `src/scrapers/login.py` loads it automatically on each run.
 
 ### 4. Run the app
 ```bash
-streamlit run frontend.py
+streamlit run app.py
 ```
+
+For a one-off query against an already-indexed collection without the UI:
+```bash
+python -m src.rag.pipeline
+```
+(Run it as a module with `-m` from the project root — a direct `python src/rag/pipeline.py` won't resolve its `src.*` imports.)
 
 ---
 
@@ -129,4 +141,4 @@ streamlit run frontend.py
 ## ⚠️ Notes
 
 - This is a personal/educational project for learning end-to-end RAG systems — respect Amazon's Terms of Service and `robots.txt` before scraping any site at scale.
-- `amazon_cookies.pkl`, `amazon_data.db`, and the local Chroma store (`RAG/`) are git-ignored — they contain session/session-derived data and shouldn't be committed.
+- `data/` (cookies + SQLite DB) and `chroma_store/` are git-ignored — they contain session/session-derived data and shouldn't be committed.

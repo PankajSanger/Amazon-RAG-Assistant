@@ -1,11 +1,31 @@
 import sqlite3
+import logging
+from contextlib import contextmanager
+from pathlib import Path
+
 import pandas as pd
 
-DB_PATH = "amazon_data.db"
+logger = logging.getLogger(__name__)
+
+#database.py -> storage -> src -> project root
+DATA_DIR = Path(__file__).resolve().parents[2] / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+DB_PATH = DATA_DIR / "amazon_data.db"
 
 
+@contextmanager
 def get_connection():
-    return sqlite3.connect(DB_PATH)
+    #sqlite3.Connection's own context manager only commits/rolls back the
+    #transaction - it never closes the connection, so we own that here.
+    conn = sqlite3.connect(DB_PATH)
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def init_db():
@@ -67,6 +87,7 @@ def save_products(product_df):
                 url = excluded.url
         """, df.to_dict("records"))
 
+    logger.info("Saved %d product(s) to the database", len(df))
     return len(df)
 
 
@@ -94,6 +115,7 @@ def save_reviews(review_df):
                 contents = excluded.contents
         """, df.to_dict("records"))
 
+    logger.info("Saved %d review(s) to the database", len(df))
     return len(df)
 
 

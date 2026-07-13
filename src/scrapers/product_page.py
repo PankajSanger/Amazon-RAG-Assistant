@@ -1,6 +1,9 @@
+import logging
 import re
 
 from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 ASIN_PATTERN = re.compile(r'/(?:dp|product-reviews|customer-reviews)/([A-Z0-9]{10})')
 
@@ -83,8 +86,7 @@ def scrape_products(driver, urls):
             if data:
                 products.append(data)
 
-        except Exception as e:
-            print(f"Error scraping {url}")
-            print(e)
+        except Exception:
+            logger.exception("Error scraping %s", url)
 
     return products

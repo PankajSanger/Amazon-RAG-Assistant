@@ -1,13 +1,15 @@
-import streamlit as st
-import pandas as pd
+import logging
 from io import BytesIO
 
-from amazon_login import get_driver, auto_login
-from product_page_scrape import scrape_products
-from keyword_search_scrape import search_scrape
-from customer_reviews_scrape import scrape_reviews
-from database import save_products, save_reviews, load_products, load_reviews
-from rag_pipeline import (
+import streamlit as st
+import pandas as pd
+
+from src.scrapers.login import get_driver, auto_login
+from src.scrapers.product_page import scrape_products
+from src.scrapers.keyword_search import search_scrape
+from src.scrapers.reviews import scrape_reviews
+from src.storage.database import save_products, save_reviews, load_products, load_reviews
+from src.rag.pipeline import (
     load_environment,
     vector_store,
     document_loader,
@@ -21,6 +23,9 @@ from rag_pipeline import (
     format_review_docs,
     reindex_reviews
 )
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 st.set_page_config(
     page_title="Amazon Product & Review Scraper",
@@ -426,6 +431,7 @@ if st.button("Start Scraping"):
 
     except FileNotFoundError as exc:
 
+        logger.warning("Missing cookie file: %s", exc)
         st.error(str(exc))
         st.info(
             "This app needs the Amazon cookie file to run scraping workflows. "
@@ -434,6 +440,7 @@ if st.button("Start Scraping"):
 
     except Exception as e:
 
+        logger.exception("Scraping run failed")
         st.error(
             f"Error: {str(e)}"
         )

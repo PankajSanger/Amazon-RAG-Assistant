@@ -1,8 +1,12 @@
+import logging
+
 from bs4 import BeautifulSoup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+logger = logging.getLogger(__name__)
 
 
 def search_scrape(driver, keyword, pages=1):
@@ -23,7 +27,7 @@ def search_scrape(driver, keyword, pages=1):
 
     for page in range(1, pages + 1):
 
-        print(f"Scraping page {page}")
+        logger.info("Scraping page %d", page)
 
         WebDriverWait(driver, 10).until(
             EC.presence_of_element_located(
@@ -97,8 +101,8 @@ def search_scrape(driver, keyword, pages=1):
                     next_button
                 )
 
-            except Exception:
-                print("No more pages available")
+            except Exception as exc:
+                logger.info("No more pages available: %s", exc)
                 break
 
     return results

@@ -1,13 +1,16 @@
 # amazon_review_scraper.py
 
-import pandas as pd
-import time
+import logging
 import re
+
+import pandas as pd
 
 from bs4 import BeautifulSoup as soup
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+
+logger = logging.getLogger(__name__)
 
 
 def scrape_reviews(driver, product_urls):
@@ -16,7 +19,7 @@ def scrape_reviews(driver, product_urls):
 
     for idx, raw_url in enumerate(product_urls, start=1):
 
-        print(f"\nScraping reviews {idx}/{len(product_urls)}")
+        logger.info("Scraping reviews %d/%d", idx, len(product_urls))
 
         match = re.search(
             r'/(?:dp|product-reviews|customer-reviews)/([A-Z0-9]{10})',
@@ -24,7 +27,7 @@ def scrape_reviews(driver, product_urls):
         )
 
         if not match:
-            print(f"Invalid URL: {raw_url}")
+            logger.warning("Invalid URL: %s", raw_url)
             continue
 
         asin = match.group(1)
@@ -41,18 +44,18 @@ def scrape_reviews(driver, product_urls):
                     (By.CSS_SELECTOR, '[data-hook="review"]')
                 )
             )
-        except Exception:
-            print(f"Reviews not loaded for ASIN: {asin}")
+        except Exception as exc:
+            logger.warning("Reviews not loaded for ASIN %s: %s", asin, exc)
             continue
 
         page_source = driver.page_source
 
         if 'data-hook="show-more-button"' in page_source:
             mode = "dynamic"
-            print("Mode: Dynamic")
+            logger.info("Mode: Dynamic")
         else:
             mode = "pagination"
-            print("Mode: Pagination")
+            logger.info("Mode: Pagination")
 
         seen_reviews = set()
 
@@ -73,7 +76,7 @@ def scrape_reviews(driver, product_urls):
                     '[data-hook="review"]'
                 )
 
-                print(f"Visible Reviews: {len(reviews)}")
+                logger.info("Visible Reviews: %d", len(reviews))
 
                 new_count = 0
 
@@ -98,16 +101,17 @@ def scrape_reviews(driver, product_urls):
 
                     new_count += 1
 
-                print(f"New Reviews Added: {new_count}")
+                logger.info("New Reviews Added: %d", new_count)
 
                 if new_count == 0:
                     break
 
                 try:
 
-                    button = driver.find_element(
-                        By.XPATH,
-                        "//a[@data-hook='show-more-button']"
+                    button = WebDriverWait(driver, 10).until(
+                        EC.element_to_be_clickable(
+                            (By.XPATH, "//a[@data-hook='show-more-button']")
+                        )
                     )
 
                     driver.execute_script(
@@ -115,19 +119,28 @@ def scrape_reviews(driver, product_urls):
                         button
                     )
 
-                    time.sleep(1)
-
                     driver.execute_script(
                         "arguments[0].click();",
                         button
                     )
 
-                    print("Clicked Show More")
+                    logger.info("Clicked Show More")
 
-                    time.sleep(3)
+                    previous_review_count = len(reviews)
 
-                except Exception:
-                    print("No More Reviews")
+                    try:
+                        WebDriverWait(driver, 10).until(
+                            lambda d: len(
+                                d.find_elements(By.CSS_SELECTOR, '[data-hook="review"]')
+                            ) > previous_review_count
+                        )
+                    except Exception:
+                        #No additional reviews rendered in time - the next
+                        #loop iteration's new_count == 0 check ends the scrape.
+                        pass
+
+                except Exception as exc:
+                    logger.info("No More Reviews: %s", exc)
                     break
 
         # ==================================================
@@ -149,7 +162,16 @@ def scrape_reviews(driver, product_urls):
 
                 driver.get(page_url)
 
-                time.sleep(2)
+                try:
+                    WebDriverWait(driver, 6).until(
+                        EC.presence_of_element_located(
+                            (By.CSS_SELECTOR, '[data-hook="review"]')
+                        )
+                    )
+                except Exception:
+                    #Most likely the last page (no reviews) - fall through
+                    #and let the empty `reviews` list below end the loop.
+                    pass
 
                 page_soup = soup(
                     driver.page_source,
@@ -160,10 +182,9 @@ def scrape_reviews(driver, product_urls):
                     '[data-hook="review"]'
                 )
 
-                print(
-                    f"ASIN {asin} | "
-                    f"Page {page_num} | "
-                    f"Reviews: {len(reviews)}"
+                logger.info(
+                    "ASIN %s | Page %d | Reviews: %d",
+                    asin, page_num, len(reviews)
                 )
 
                 if not reviews:
@@ -192,9 +213,9 @@ def scrape_reviews(driver, product_urls):
 
                     new_count += 1
 
-                print(
-                    f"Page {page_num} | "
-                    f"New Reviews: {new_count}"
+                logger.info(
+                    "Page %d | New Reviews: %d",
+                    page_num, new_count
                 )
 
                 if new_count == 0:
@@ -249,7 +270,8 @@ def extract_review(review, asin):
             strip=True
         )
 
-    except Exception:
+    except Exception as exc:
+        logger.warning("Skipping review for ASIN %s - no title/url: %s", asin, exc)
         return None
 
     try:
@@ -266,7 +288,8 @@ def extract_review(review, asin):
             ).group()
         )
 
-    except Exception:
+    except Exception as exc:
+        logger.debug("No rating found for ASIN %s: %s", asin, exc)
         rating = None
 
     try:
@@ -279,7 +302,8 @@ def extract_review(review, asin):
         if len(author) > 50:
             author = "Amazon Customer"
 
-    except Exception:
+    except Exception as exc:
+        logger.debug("No author found for ASIN %s: %s", asin, exc)
         author = "Amazon Customer"
 
     try:
@@ -303,7 +327,8 @@ def extract_review(review, asin):
             errors="coerce"
         )
 
-    except Exception:
+    except Exception as exc:
+        logger.debug("No date found for ASIN %s: %s", asin, exc)
         review_date = None
 
     try:
@@ -316,7 +341,8 @@ def extract_review(review, asin):
             strip=True
         )
 
-    except Exception:
+    except Exception as exc:
+        logger.debug("No review body found for ASIN %s: %s", asin, exc)
         contents = ""
 
     return {

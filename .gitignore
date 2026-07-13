@@ -4,7 +4,6 @@ __pycache__/
 *.pyc
 
 # Local data & credentials — never commit these
-amazon_cookies.pkl
-amazon_data.db
-RAG/
+data/
+chroma_store/
 ~$*.xlsx
