@@ -1,0 +1,10 @@
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Local data & credentials — never commit these
+amazon_cookies.pkl
+amazon_data.db
+RAG/
+~$*.xlsx

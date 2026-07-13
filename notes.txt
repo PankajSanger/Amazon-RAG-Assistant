@@ -1,0 +1,39 @@
+Start 9th July
+
+Major Goal : Creating Amazon Scraper
+
+Sub-tasks
+1. Autologin : We have used pickle module to load the cookies which we saved when we logged in to amazon.
+2. Building Product page scraping logic - Done with one product details page. Now we will build it functional and for multiple urls at once.
+3. Done with multiple urls scraping with using some functional programming.
+4. Now building a first page scraper. We are done with first page scraper as well
+
+done for 10th July
+
+11th July start
+
+1. adding reviews scraping logic in the project. - Done
+2. taking inputs on the terminal - Streamlit UI created
+3. perfecting the code - error handling
+4. optimization - Done
+
+12th July start
+
+Major Goal : RAG pipeline
+
+1. product details data
+2. reviews data
+
+- storing products and reviews data for keyword 'hair oils' in SQLite database first
+- first then we will create rag pipeline for products details  - planning to use self query retriever (because of heavy metadata filtering involved)
+
+
+
+
+
+
+
+
+
+
+
