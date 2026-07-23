@@ -23,7 +23,7 @@ RAG_DIR = str(PROJECT_ROOT / "chroma_store")
 
 def load_environment():
     load_dotenv()
-    llm = ChatOpenAI(model="gpt-5")
+    llm = ChatOpenAI(model="gpt-5", temperature=0)
     embedding_model = OpenAIEmbeddings()
     return llm, embedding_model
 

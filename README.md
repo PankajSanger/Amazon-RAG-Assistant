@@ -138,6 +138,29 @@ python -m src.rag.pipeline
 
 ---
 
+## ✅ Evaluation (deepeval)
+
+The RAG pipeline is evaluated with [deepeval](https://github.com/confident-ai/deepeval) in `tests/test_rag_evaluation.py`, scoring both the product and review pipelines on **Answer Relevancy** and **Faithfulness** (LLM-judged, threshold 0.7) against real scraped data.
+
+```bash
+deepeval test run tests/test_rag_evaluation.py
+```
+
+Latest run (`temperature=0` on the LLM):
+
+| Pipeline | Query | Answer Relevancy | Faithfulness |
+|----------|-------|:-:|:-:|
+| Product  | "Which hair oil is best for hair fall control?" | 1.00 | 1.00 |
+| Product  | "Suggest a hair oil under 500 rupees with a good rating." | 1.00 | 1.00 |
+| Review   | "What do customers say about the smell of the hair oil?" | 1.00 | 1.00 |
+| Review   | "Are there any complaints about leakage or packaging?" | 1.00 | 1.00 |
+
+**4/4 passed.** Note: with the default (non-zero) temperature, the leakage/packaging query was flaky — the retriever correctly surfaced the review mentioning "some leakage," but the LLM's summarization occasionally dropped or contradicted it, failing Faithfulness (0.67) on one run. Pinning `temperature=0` in `load_environment()` (`src/rag/pipeline.py`) resolved it.
+
+Tests skip automatically if `OPENAI_API_KEY` is unset or if `data/amazon_data.db` has no scraped products/reviews yet.
+
+---
+
 ## ⚠️ Notes
 
 - This is a personal/educational project for learning end-to-end RAG systems — respect Amazon's Terms of Service and `robots.txt` before scraping any site at scale.
