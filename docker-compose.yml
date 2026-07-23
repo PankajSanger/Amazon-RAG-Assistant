@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      secrets:
+        - guardrails_token
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+      - ./chroma_store:/app/chroma_store
+
+secrets:
+  guardrails_token:
+    environment: GUARDRAILS_TOKEN

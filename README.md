@@ -59,7 +59,7 @@ flowchart LR
 | Embeddings & Vector Store | OpenAI Embeddings, ChromaDB (`langchain-chroma`) |
 | Retrieval        | LangChain Self-Query Retriever |
 | LLM              | OpenAI GPT-5 (`langchain-openai`) |
-| UI               | Streamlit |
+| UI               | React (Vite + TypeScript + Tailwind), backed by a FastAPI API. Streamlit (`app.py`) remains available as a legacy local-only UI. |
 
 ---
 
@@ -109,18 +109,54 @@ OPENAI_API_KEY=your_key_here
 ```
 
 ### 3. Provide an Amazon session
-Scraping relies on a logged-in session saved as browser cookies. Generate `amazon_cookies.pkl` once by logging into `amazon.in` in a Selenium-controlled Chrome session and pickling `driver.get_cookies()`. Place the file at `data/amazon_cookies.pkl` — `src/scrapers/login.py` loads it automatically on each run.
+Scraping relies on a logged-in session saved as browser cookies at `data/amazon_cookies.pkl`, which `src/scrapers/login.py` loads automatically on each run. Generate (or refresh, once it expires) that file with:
+```bash
+python -m src.scrapers.login
+```
+This opens a real, visible Chrome window — log into `amazon.in` by hand (this is the one step that can't be automated, since it may involve a CAPTCHA/2FA challenge) and the script detects the signed-in session and pickles the cookies to `data/amazon_cookies.pkl` for you. It needs a real display, so run it locally — not inside Docker (`SCRAPER_HEADLESS=1` makes it refuse to start).
+
+`auto_login()` verifies the loaded cookies actually produced a signed-in session (checks the account nav for "Sign in") and raises `AutoLoginError` with a clear message — pointing at the command above — if not. Both the Streamlit app and the React/FastAPI scrape jobs surface this distinctly from a missing cookie file, so an expired session fails fast instead of silently scraping as a logged-out/guest session.
 
 ### 4. Run the app
+
+**React frontend (primary UI)** — needs two processes:
+```bash
+# Terminal 1 — API (from the project root)
+uvicorn src.api.main:app --reload --port 8000
+
+# Terminal 2 — frontend
+cd frontend
+npm install
+npm run dev
+```
+Then open the Vite dev server URL (default `http://localhost:5173`) — it proxies `/api` to the backend on port 8000. FastAPI's interactive docs are at `http://localhost:8000/docs`.
+
+**Streamlit (legacy)**:
 ```bash
 streamlit run app.py
 ```
 
-For a one-off query against an already-indexed collection without the UI:
+For a one-off query against an already-indexed collection without either UI:
 ```bash
 python -m src.rag.pipeline
 ```
 (Run it as a module with `-m` from the project root — a direct `python src/rag/pipeline.py` won't resolve its `src.*` imports.)
+
+---
+
+## 🐳 Docker
+
+A single container builds the React app and serves it, plus the `/api/*` routes, from one FastAPI process. Scraping runs **headless** inside the container (no visible browser window).
+
+`guardrails-grhub-detect-pii` and `guardrails-grhub-toxic-language` aren't on public PyPI — they're served from Guardrails' private, token-gated index. The build needs that token to fetch them, passed in as a [BuildKit secret](https://docs.docker.com/build/building/secrets/) (never written into an image layer). Add to `.env`:
+```
+GUARDRAILS_TOKEN=<the token= line from ~/.guardrailsrc>
+```
+Then:
+```bash
+docker compose up --build
+```
+Open `http://localhost:8000`. `data/` and `chroma_store/` are bind-mounted, so the SQLite DB, Chroma vector store, and `data/amazon_cookies.pkl` are shared with your local setup — scrape via the local Streamlit/React flow or the containerized one interchangeably.
 
 ---
 

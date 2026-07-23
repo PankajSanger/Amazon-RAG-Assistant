@@ -1,0 +1,14 @@
+venv/
+frontend/node_modules/
+frontend/dist/
+.git/
+__pycache__/
+**/__pycache__/
+.pytest_cache/
+.deepeval/
+.guardrails/
+data/
+chroma_store/
+*.pyc
+.env
+notes.txt

@@ -7,6 +7,7 @@ from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_chroma import Chroma
 from langchain_classic.chains.query_constructor.schema import AttributeInfo
 from langchain_classic.retrievers.self_query.base import SelfQueryRetriever
+from langchain_community.query_constructors.chroma import ChromaTranslator
 from langchain_core.prompts import PromptTemplate
 from dotenv import load_dotenv
 import pandas as pd
@@ -179,12 +180,19 @@ def reindex_reviews(embedding_model):
 
 
 #Self Query Retriever
+#Passing structured_query_translator explicitly skips SelfQueryRetriever's
+#_get_builtin_translator(), which unconditionally imports ~17 legacy vectorstore
+#integrations from langchain-community even though only Chroma is used here -
+#several of those (e.g. databricks, weaviate, qdrant) were split out into
+#standalone packages and are no longer bundled in langchain-community, so that
+#import chain breaks on a clean install.
 def _self_query_retrieve(llm, store, query, metadata_field_info, document_contents):
     retriever = SelfQueryRetriever.from_llm(
         llm=llm,
         vectorstore=store,
         metadata_field_info=metadata_field_info,
         document_contents=document_contents,
+        structured_query_translator=ChromaTranslator(),
         search_kwargs={"k": 3}
     )
 
@@ -262,12 +270,12 @@ def get_llm_response(llm, query, context):
     return response.content
 
 
-def _answer(query, document_loader_fn, collection_name, id_fn, retrieve_fn, format_fn, redact_pii):
+def _answer(query, document_loader_fn, collection_name, id_fn, retrieve_fn, format_fn, redact_pii, include_sources=False):
     llm, embedding_model = load_environment()
 
     refusal = guard_query(llm, query)
     if refusal:
-        return refusal
+        return (refusal, []) if include_sources else refusal
 
     store = vector_store(
         embedding_model,
@@ -281,10 +289,10 @@ def _answer(query, document_loader_fn, collection_name, id_fn, retrieve_fn, form
 
     answer = guard_answer(get_llm_response(llm, query, context), redact_pii=redact_pii)
     logger.info("AI: %s", answer)
-    return answer
+    return (answer, retrieved_documents) if include_sources else answer
 
 
-def rag_pipeline(query):
+def rag_pipeline(query, include_sources=False):
     #Product titles/brands are frequently misdetected as PERSON entities by
     #DetectPII, and products carry no reviewer PII, so PII redaction is
     #skipped here and only applied to review answers.
@@ -295,11 +303,12 @@ def rag_pipeline(query):
         document_ids,
         retrieve_documents,
         format_product_docs,
-        redact_pii=False
+        redact_pii=False,
+        include_sources=include_sources
     )
 
 
-def review_rag_pipeline(query):
+def review_rag_pipeline(query, include_sources=False):
     return _answer(
         query,
         lambda: review_document_loader(load_reviews()),
@@ -307,7 +316,8 @@ def review_rag_pipeline(query):
         review_document_ids,
         retrieve_review_documents,
         format_review_docs,
-        redact_pii=True
+        redact_pii=True,
+        include_sources=include_sources
     )
 
 

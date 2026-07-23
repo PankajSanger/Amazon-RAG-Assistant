@@ -4,7 +4,7 @@ from io import BytesIO
 import streamlit as st
 import pandas as pd
 
-from src.scrapers.login import get_driver, auto_login
+from src.scrapers.login import get_driver, auto_login, AutoLoginError
 from src.scrapers.product_page import scrape_products
 from src.scrapers.keyword_search import search_scrape
 from src.scrapers.reviews import scrape_reviews
@@ -437,6 +437,11 @@ if st.button("Start Scraping"):
             "This app needs the Amazon cookie file to run scraping workflows. "
             "Make sure amazon_cookies.pkl is present in the deployment environment."
         )
+
+    except AutoLoginError as exc:
+
+        logger.warning("Amazon auto-login failed: %s", exc)
+        st.error(str(exc))
 
     except Exception as e:
 
