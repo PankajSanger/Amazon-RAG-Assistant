@@ -161,6 +161,27 @@ Tests skip automatically if `OPENAI_API_KEY` is unset or if `data/amazon_data.db
 
 ---
 
+## 🛡️ Guardrails
+
+`src/rag/guardrails.py` wraps every pipeline answer with [Guardrails AI](https://github.com/guardrails-ai/guardrails) validators, applied in `_answer()` (`src/rag/pipeline.py`):
+
+- **Input guard** — runs before retrieval. Blocks queries that are off-topic (unrelated to hair oil products/reviews) or attempt prompt injection/jailbreaking, via a custom LLM-judged `OnTopicGuard` validator, plus `ToxicLanguage` to reject toxic queries. Blocked queries get a fixed refusal message instead of reaching the LLM.
+- **Output guard** — runs on the generated answer. `ToxicLanguage` strips toxic sentences from both pipelines' answers. `DetectPII` redacts PERSON/EMAIL/PHONE/etc. entities, but **only for `review_rag_pipeline`** — reviewer names are a real PII risk pulled in from scraped review text, whereas running it on `rag_pipeline` (products) caused false positives where brand/product names (e.g. "Indulekha Bringha") got misdetected as `PERSON` and redacted.
+
+Setup (one-time):
+```bash
+guardrails configure --token YOUR_TOKEN   # free token from https://guardrailsai.com/hub/keys
+guardrails hub install hub://guardrails/toxic_language
+pip install guardrails-grhub-detect-pii   # installed directly via pip, not `hub install` -
+                                           # its dependency chain hit a uv/cryptography file-lock
+                                           # bug on Windows; the underlying package works fine
+```
+`ToxicLanguage` and `DetectPII` download models on first use (~an ALBERT model and spaCy's `en_core_web_lg`, respectively).
+
+**Known implementation detail:** chaining multiple validators onto one `Guard` via repeated `.use()` calls silently dropped earlier validators' failures in this guardrails-ai version — each validator here gets its own single-validator `Guard`, run in sequence, to avoid that.
+
+---
+
 ## ⚠️ Notes
 
 - This is a personal/educational project for learning end-to-end RAG systems — respect Amazon's Terms of Service and `robots.txt` before scraping any site at scale.

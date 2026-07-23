@@ -10,3 +10,6 @@ chroma_store/
 
 # deepeval local cache/telemetry
 .deepeval/
+
+# guardrails-ai local hub validator registry
+.guardrails/

@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import pandas as pd
 import chromadb
 
+from src.rag.guardrails import guard_answer, guard_query
 from src.storage.database import load_products, load_reviews
 
 logger = logging.getLogger(__name__)
@@ -261,8 +262,12 @@ def get_llm_response(llm, query, context):
     return response.content
 
 
-def _answer(query, document_loader_fn, collection_name, id_fn, retrieve_fn, format_fn):
+def _answer(query, document_loader_fn, collection_name, id_fn, retrieve_fn, format_fn, redact_pii):
     llm, embedding_model = load_environment()
+
+    refusal = guard_query(llm, query)
+    if refusal:
+        return refusal
 
     store = vector_store(
         embedding_model,
@@ -274,19 +279,23 @@ def _answer(query, document_loader_fn, collection_name, id_fn, retrieve_fn, form
     retrieved_documents = retrieve_fn(llm, store, query)
     context = format_fn(retrieved_documents)
 
-    answer = get_llm_response(llm, query, context)
+    answer = guard_answer(get_llm_response(llm, query, context), redact_pii=redact_pii)
     logger.info("AI: %s", answer)
     return answer
 
 
 def rag_pipeline(query):
+    #Product titles/brands are frequently misdetected as PERSON entities by
+    #DetectPII, and products carry no reviewer PII, so PII redaction is
+    #skipped here and only applied to review answers.
     return _answer(
         query,
         lambda: document_loader(load_products()),
         "product_details",
         document_ids,
         retrieve_documents,
-        format_product_docs
+        format_product_docs,
+        redact_pii=False
     )
 
 
@@ -297,7 +306,8 @@ def review_rag_pipeline(query):
         "customer_reviews",
         review_document_ids,
         retrieve_review_documents,
-        format_review_docs
+        format_review_docs,
+        redact_pii=True
     )
 
 
