@@ -19,6 +19,14 @@ interface Exchange<TSource> {
   error?: string
 }
 
+// crypto.randomUUID() only exists in secure contexts (HTTPS or localhost) -
+// this app currently runs on plain HTTP on a raw IP in production, where
+// that API is simply undefined, so calling it throws and silently breaks
+// question submission entirely. This has no such restriction.
+function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
 function loadHistory<TSource>(storageKey: string): Exchange<TSource>[] {
   try {
     const raw = localStorage.getItem(storageKey)
@@ -104,7 +112,7 @@ export function AskExperience<TSource>({
     const trimmed = question.trim()
     if (!trimmed || ask.isPending) return
 
-    const id = crypto.randomUUID()
+    const id = generateId()
     setExchanges((prev) => [...prev, { id, query: trimmed, status: 'pending' }])
     setQuery('')
 
