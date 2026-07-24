@@ -46,10 +46,11 @@ def _is_signed_in(driver, timeout=10):
         account_nav = WebDriverWait(driver, timeout).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ACCOUNT_NAV_SELECTOR))
         )
+        text = account_nav.text.strip().lower()
     except Exception:
         return False
 
-    return "sign in" not in account_nav.text.strip().lower()
+    return "sign in" not in text
 
 
 def auto_login(driver, cookie_file=DEFAULT_COOKIE_FILE):
