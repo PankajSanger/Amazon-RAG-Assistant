@@ -151,6 +151,18 @@ def vector_store(embedding_model, document_loader_fn, collection_name="product_d
     return store
 
 
+def clear_collections():
+    """Deletes the product/review Chroma collections entirely, if present.
+    vector_store() recreates a collection on demand the next time it's needed."""
+    client = chromadb.PersistentClient(path=RAG_DIR)
+    existing_collections = [c.name for c in client.list_collections()]
+
+    for collection_name in ("product_details", "customer_reviews"):
+        if collection_name in existing_collections:
+            client.delete_collection(collection_name)
+            logger.warning("Deleted collection: %s", collection_name)
+
+
 #Reindex a dataset into the existing (or new) collection, keyed by id_fn,
 #so re-running it updates existing rows instead of duplicating them.
 def _reindex_collection(embedding_model, load_data_fn, document_loader_fn, id_fn, collection_name, empty_error):

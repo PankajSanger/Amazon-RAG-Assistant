@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Download, Loader2, PlayCircle } from 'lucide-react'
+import { AlertTriangle, Download, Loader2, PlayCircle, Trash2 } from 'lucide-react'
 
-import { useCreateScrapeJob, useScrapeJobStatus } from '@/api/hooks'
+import { useClearDatabase, useCreateScrapeJob, useScrapeJobStatus } from '@/api/hooks'
 import { scrapeJobDownloadUrl } from '@/api/client'
 import type { ScrapeInputType } from '@/api/types'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -226,7 +226,84 @@ export function ScrapeData() {
           )}
         </div>
       </div>
+
+      <DangerZone />
     </div>
+  )
+}
+
+const CONFIRM_PHRASE = 'DELETE'
+
+function DangerZone() {
+  const [password, setPassword] = useState('')
+  const [confirmText, setConfirmText] = useState('')
+  const clearDatabase = useClearDatabase()
+
+  const canSubmit = password.length > 0 && confirmText === CONFIRM_PHRASE
+
+  function handleClear() {
+    if (!canSubmit) return
+
+    clearDatabase.mutate(password, {
+      onSuccess: (data) => {
+        toast.success(`Cleared ${data.products_cleared} product(s) and ${data.reviews_cleared} review(s).`)
+        setPassword('')
+        setConfirmText('')
+      },
+      onError: (err) => {
+        toast.error(err.message)
+        setPassword('')
+      },
+    })
+  }
+
+  return (
+    <Card className="mt-6 border-destructive/40">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-destructive" />
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+        </div>
+        <CardDescription>
+          Permanently deletes all scraped products and reviews, and clears the search index, so you can
+          scrape fresh data into an empty database. This cannot be undone from the UI — a nightly backup
+          exists on the server if you need to recover.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="admin-password">Admin password</Label>
+          <Input
+            id="admin-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="sm:w-56"
+            autoComplete="off"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="confirm-delete">
+            Type <span className="font-mono text-destructive">{CONFIRM_PHRASE}</span> to confirm
+          </Label>
+          <Input
+            id="confirm-delete"
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value)}
+            className="sm:w-56"
+            autoComplete="off"
+          />
+        </div>
+        <Button
+          variant="destructive"
+          disabled={!canSubmit || clearDatabase.isPending}
+          onClick={handleClear}
+        >
+          {clearDatabase.isPending ? <Loader2 className="animate-spin" /> : <Trash2 />}
+          Clear Database
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 

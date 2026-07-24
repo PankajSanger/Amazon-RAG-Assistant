@@ -42,3 +42,12 @@ class ScrapeJobStatusResponse(BaseModel):
     reviews_preview: list[dict[str, Any]]
     error: Optional[str] = None
     download_ready: bool
+
+
+class ClearDatabaseRequest(BaseModel):
+    password: str
+
+
+class ClearDatabaseResponse(BaseModel):
+    products_cleared: int
+    reviews_cleared: int

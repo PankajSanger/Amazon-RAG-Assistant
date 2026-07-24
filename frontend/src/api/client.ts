@@ -1,5 +1,6 @@
 import type {
   AskResponse,
+  ClearDatabaseResponse,
   CreateScrapeJobParams,
   Product,
   ProductSource,
@@ -90,4 +91,12 @@ export function getScrapeJob(jobId: string) {
 
 export function scrapeJobDownloadUrl(jobId: string) {
   return `${API_BASE}/scrape/jobs/${jobId}/download`
+}
+
+export function clearDatabase(password: string) {
+  return fetch(`${API_BASE}/admin/clear-database`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password }),
+  }).then((res) => handle<ClearDatabaseResponse>(res))
 }

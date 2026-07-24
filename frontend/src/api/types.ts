@@ -78,3 +78,8 @@ export interface CreateScrapeJobParams {
   scrapeReviews: boolean
   file?: File
 }
+
+export interface ClearDatabaseResponse {
+  products_cleared: number
+  reviews_cleared: number
+}

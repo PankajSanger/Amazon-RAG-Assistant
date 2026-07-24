@@ -56,3 +56,15 @@ export function useScrapeJobStatus(jobId: string | null) {
     },
   })
 }
+
+export function useClearDatabase() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: api.clearDatabase,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stats'] })
+      queryClient.invalidateQueries({ queryKey: ['products'] })
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+    },
+  })
+}

@@ -129,3 +129,18 @@ def load_reviews():
     init_db()
     with get_connection() as conn:
         return pd.read_sql_query("SELECT * FROM reviews", conn)
+
+
+def clear_all():
+    """Deletes every row from products and reviews. Returns (products_cleared, reviews_cleared)."""
+    init_db()
+    with get_connection() as conn:
+        products_cleared = conn.execute("SELECT COUNT(*) FROM products").fetchone()[0]
+        reviews_cleared = conn.execute("SELECT COUNT(*) FROM reviews").fetchone()[0]
+
+        #reviews.asin references products(asin) - delete reviews first.
+        conn.execute("DELETE FROM reviews")
+        conn.execute("DELETE FROM products")
+
+    logger.warning("Cleared all data: %d product(s), %d review(s)", products_cleared, reviews_cleared)
+    return products_cleared, reviews_cleared

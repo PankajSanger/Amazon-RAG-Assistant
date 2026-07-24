@@ -107,6 +107,7 @@ Create a `.env` file in the project root:
 ```
 OPENAI_API_KEY=your_key_here
 ```
+Optionally, set `ADMIN_PASSWORD=some_password` to enable the "Danger Zone" clear-database feature on the Scrape Data page (`POST /api/admin/clear-database`) — permanently deletes all scraped products/reviews and clears the search index, gated behind this password since the app has no other authentication. **Without `ADMIN_PASSWORD` set, the endpoint is disabled (503)** rather than silently open.
 
 ### 3. Provide an Amazon session
 Scraping relies on a logged-in session saved as browser cookies at `data/amazon_cookies.pkl`, which `src/scrapers/login.py` loads automatically on each run. Generate (or refresh, once it expires) that file with:

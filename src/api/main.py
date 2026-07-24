@@ -2,11 +2,20 @@ import logging
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from src.api.routers import products, reviews, scrape
+from src.api.routers import admin, products, reviews, scrape
+
+#In Docker, docker-compose's env_file: injects .env values directly into the
+#process environment before Python starts, so this is a no-op there. In local
+#(non-Docker) dev, nothing else reliably runs before every router - e.g.
+#src/rag/pipeline.py's load_environment() only loads .env lazily, on first use
+#of the RAG pipeline - so routers that read env vars without going through
+#that path (like admin.py's ADMIN_PASSWORD) would otherwise never see it.
+load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -25,6 +34,7 @@ app.add_middleware(
 app.include_router(scrape.router)
 app.include_router(products.router)
 app.include_router(reviews.router)
+app.include_router(admin.router)
 
 
 @app.get("/api/health")
