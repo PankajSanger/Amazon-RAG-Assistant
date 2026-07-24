@@ -61,13 +61,27 @@ def document_loader(data):
         product details = {about}"""
 
     def metadata(data, row):
-        return {
+        meta = {
             "asin": str(data['asin'].iloc[row]),
             "title": str(data['title'].iloc[row]),
-            "rating": float(data['rating'].iloc[row]),
-            "no_of_ratings": int(data['no_of_ratings'].iloc[row]),
-            "price": int(data['price'].iloc[row])
         }
+
+        #Chroma metadata values must be str/int/float/bool - omit fields that
+        #are missing (NaN) in the source data rather than fabricating a 0,
+        #which would misleadingly look like a real rating/price/count.
+        rating = data['rating'].iloc[row]
+        if pd.notna(rating):
+            meta["rating"] = float(rating)
+
+        no_of_ratings = data['no_of_ratings'].iloc[row]
+        if pd.notna(no_of_ratings):
+            meta["no_of_ratings"] = int(no_of_ratings)
+
+        price = data['price'].iloc[row]
+        if pd.notna(price):
+            meta["price"] = int(price)
+
+        return meta
 
     return _build_documents(data, "asin", content, metadata)
 

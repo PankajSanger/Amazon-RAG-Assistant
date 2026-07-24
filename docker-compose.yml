@@ -4,6 +4,7 @@ services:
       context: .
       secrets:
         - guardrails_token
+    restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
