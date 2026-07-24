@@ -63,6 +63,9 @@ export interface ScrapeJobStatusResponse {
   review_count: number
   products_preview: Record<string, unknown>[]
   reviews_preview: Record<string, unknown>[]
+  live_review_count: number
+  current_product: string | null
+  latest_review: { author: string | null; rating: number | null; title: string | null } | null
   error: string | null
   download_ready: boolean
 }

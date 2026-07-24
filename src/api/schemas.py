@@ -40,6 +40,9 @@ class ScrapeJobStatusResponse(BaseModel):
     review_count: int
     products_preview: list[dict[str, Any]]
     reviews_preview: list[dict[str, Any]]
+    live_review_count: int = 0
+    current_product: Optional[str] = None
+    latest_review: Optional[dict[str, Any]] = None
     error: Optional[str] = None
     download_ready: bool
 

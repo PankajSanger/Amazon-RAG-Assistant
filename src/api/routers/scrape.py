@@ -76,6 +76,9 @@ def get_scrape_job(job_id: str):
         review_count=job["review_count"],
         products_preview=job["products_preview"],
         reviews_preview=job["reviews_preview"],
+        live_review_count=job["live_review_count"],
+        current_product=job["current_product"],
+        latest_review=job["latest_review"],
         error=job["error"],
         download_ready=job["excel_bytes"] is not None,
     )

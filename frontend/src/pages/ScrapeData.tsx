@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { AlertTriangle, Download, KeyRound, Loader2, PlayCircle, Trash2, UploadCloud } from 'lucide-react'
+import { AlertTriangle, Download, KeyRound, Loader2, MessageSquareQuote, PlayCircle, Star, Trash2, UploadCloud } from 'lucide-react'
 
 import { useClearDatabase, useCreateScrapeJob, useScrapeJobStatus, useUploadCookies } from '@/api/hooks'
 import { scrapeJobDownloadUrl } from '@/api/client'
-import type { ScrapeInputType } from '@/api/types'
+import type { ScrapeInputType, ScrapeJobStatusResponse } from '@/api/types'
 import { PageHeader } from '@/components/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -198,6 +198,8 @@ export function ScrapeData() {
                 <p className="text-sm text-muted-foreground">{job.message}</p>
                 {job.error && <p className="text-sm text-destructive">{job.error}</p>}
 
+                {job.status === 'running' && <LiveScrapeActivity job={job} />}
+
                 {job.status === 'done' && (
                   <div className="mt-2 flex items-center gap-4">
                     <span className="text-sm text-foreground">
@@ -229,6 +231,57 @@ export function ScrapeData() {
 
       <SessionCard />
       <DangerZone />
+    </div>
+  )
+}
+
+function LiveScrapeActivity({ job }: { job: ScrapeJobStatusResponse }) {
+  if (!job.current_product && job.live_review_count === 0) return null
+
+  const review = job.latest_review
+  const reviewKey = review ? `${review.author ?? ''}-${review.title ?? ''}-${job.live_review_count}` : 'none'
+
+  return (
+    <div className="mt-1 flex flex-col gap-3 rounded-lg border border-border bg-muted/40 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+          </span>
+          <span className="text-sm font-medium text-foreground">{job.current_product ?? 'Scraping reviews...'}</span>
+        </div>
+        {job.live_review_count > 0 && (
+          <div key={job.live_review_count} className="animate-pop-in text-right">
+            <span className="text-xl font-semibold text-foreground">{job.live_review_count}</span>
+            <span className="ml-1 text-xs text-muted-foreground">reviews found</span>
+          </div>
+        )}
+      </div>
+
+      {review && (
+        <div key={reviewKey} className="animate-pop-in flex items-start gap-3 rounded-md border border-border bg-card p-3">
+          <MessageSquareQuote className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <div className="flex min-w-0 flex-col gap-1">
+            <div className="flex items-center gap-2">
+              {typeof review.rating === 'number' && (
+                <div className="flex items-center gap-0.5">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-3.5 w-3.5 ${
+                        i < Math.round(review.rating ?? 0) ? 'fill-warning text-warning' : 'text-muted-foreground'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+              <span className="text-xs font-medium text-muted-foreground">{review.author ?? 'Amazon Customer'}</span>
+            </div>
+            <p className="truncate text-sm text-foreground">{review.title || 'Untitled review'}</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

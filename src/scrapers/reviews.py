@@ -13,7 +13,7 @@ from selenium.webdriver.support import expected_conditions as EC
 logger = logging.getLogger(__name__)
 
 
-def scrape_reviews(driver, product_urls):
+def scrape_reviews(driver, product_urls, on_progress=None):
 
     data = []
 
@@ -100,6 +100,15 @@ def scrape_reviews(driver, product_urls):
                     data.append(review_data)
 
                     new_count += 1
+
+                    if on_progress:
+                        on_progress(
+                            product_idx=idx,
+                            total_products=len(product_urls),
+                            asin=asin,
+                            total_reviews=len(data),
+                            review=review_data,
+                        )
 
                 logger.info("New Reviews Added: %d", new_count)
 
@@ -212,6 +221,15 @@ def scrape_reviews(driver, product_urls):
                     data.append(review_data)
 
                     new_count += 1
+
+                    if on_progress:
+                        on_progress(
+                            product_idx=idx,
+                            total_products=len(product_urls),
+                            asin=asin,
+                            total_reviews=len(data),
+                            review=review_data,
+                        )
 
                 logger.info(
                     "Page %d | New Reviews: %d",

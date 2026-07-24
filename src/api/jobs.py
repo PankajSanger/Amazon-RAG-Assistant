@@ -29,6 +29,9 @@ def _new_job():
         "review_count": 0,
         "products_preview": [],
         "reviews_preview": [],
+        "live_review_count": 0,
+        "current_product": None,
+        "latest_review": None,
         "error": None,
         "excel_bytes": None,
     }
@@ -108,7 +111,21 @@ def _run_job(job_id, params):
         if params["scrape_reviews"]:
             _update(job_id, message=f"Scraping customer reviews for {len(urls)} products...", progress=80)
 
-            review_df = scrape_reviews(driver=driver, product_urls=urls)
+            def _on_review_progress(product_idx, total_products, asin, total_reviews, review):
+                progress = 80 + min(14, int(14 * product_idx / total_products))
+                _update(
+                    job_id,
+                    progress=progress,
+                    current_product=f"Product {product_idx} of {total_products} (ASIN {asin})",
+                    live_review_count=total_reviews,
+                    latest_review={
+                        "author": review["author"],
+                        "rating": review["rating"],
+                        "title": review["title"],
+                    },
+                )
+
+            review_df = scrape_reviews(driver=driver, product_urls=urls, on_progress=_on_review_progress)
 
             saved_review_count = save_reviews(review_df)
 
