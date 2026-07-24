@@ -1,14 +1,17 @@
-import { useMemo, useState } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, Search, Star } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, ExternalLink, Search, Star } from 'lucide-react'
 
 import { useProducts, useReviews } from '@/api/hooks'
 import type { Product, Review } from '@/api/types'
 import { PageHeader } from '@/components/PageHeader'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { cn } from '@/lib/utils'
+
+const PAGE_SIZE = 10
 
 type SortDirection = 'asc' | 'desc'
 
@@ -68,6 +71,34 @@ function useSorted<T, K extends string>(
 type ProductColumn = 'title' | 'price' | 'rating' | 'no_of_ratings'
 type ReviewColumn = 'author' | 'rating' | 'date' | 'asin'
 
+function Pagination({
+  page,
+  totalPages,
+  onChange,
+}: {
+  page: number
+  totalPages: number
+  onChange: (page: number) => void
+}) {
+  if (totalPages <= 1) return null
+
+  return (
+    <div className="flex items-center justify-end gap-3">
+      <p className="text-xs text-muted-foreground">
+        Page {page} of {totalPages}
+      </p>
+      <div className="flex items-center gap-1">
+        <Button variant="outline" size="icon" disabled={page <= 1} onClick={() => onChange(page - 1)}>
+          <ChevronLeft />
+        </Button>
+        <Button variant="outline" size="icon" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
+          <ChevronRight />
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 export function BrowseData() {
   return (
     <div>
@@ -93,6 +124,7 @@ function ProductsTable() {
   const [search, setSearch] = useState('')
   const [sortColumn, setSortColumn] = useState<ProductColumn>('no_of_ratings')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [page, setPage] = useState(1)
 
   function handleSort(column: ProductColumn) {
     if (column === sortColumn) {
@@ -112,14 +144,22 @@ function ProductsTable() {
 
   const sorted = useSorted(filtered, sortColumn, sortDirection, (p: Product, col) => p[col])
 
+  useEffect(() => setPage(1), [search, sortColumn, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const pageItems = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
   if (isLoading) return <Skeleton className="mt-4 h-64" />
 
   return (
     <div className="mt-4 flex flex-col gap-3">
       <SearchBar value={search} onChange={setSearch} placeholder="Search products by title or ASIN..." />
-      <p className="text-xs text-muted-foreground">
-        {sorted.length} of {data?.length ?? 0} products
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {sorted.length} of {data?.length ?? 0} products
+        </p>
+        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -131,7 +171,7 @@ function ProductsTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sorted.map((p) => (
+          {pageItems.map((p) => (
             <TableRow key={p.asin}>
               <TableCell className="max-w-md">
                 <span className="line-clamp-2">{p.title ?? '—'}</span>
@@ -173,6 +213,7 @@ function ReviewsTable() {
   const [search, setSearch] = useState('')
   const [sortColumn, setSortColumn] = useState<ReviewColumn>('date')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [page, setPage] = useState(1)
 
   function handleSort(column: ReviewColumn) {
     if (column === sortColumn) {
@@ -194,14 +235,22 @@ function ReviewsTable() {
 
   const sorted = useSorted(filtered, sortColumn, sortDirection, (r: Review, col) => r[col])
 
+  useEffect(() => setPage(1), [search, sortColumn, sortDirection])
+
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
+  const pageItems = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
   if (isLoading) return <Skeleton className="mt-4 h-64" />
 
   return (
     <div className="mt-4 flex flex-col gap-3">
       <SearchBar value={search} onChange={setSearch} placeholder="Search reviews by author, content, or ASIN..." />
-      <p className="text-xs text-muted-foreground">
-        {sorted.length} of {data?.length ?? 0} reviews
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-muted-foreground">
+          {sorted.length} of {data?.length ?? 0} reviews
+        </p>
+        <Pagination page={page} totalPages={totalPages} onChange={setPage} />
+      </div>
       <Table>
         <TableHeader>
           <TableRow>
@@ -214,7 +263,7 @@ function ReviewsTable() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sorted.map((r) => (
+          {pageItems.map((r) => (
             <TableRow key={r.url}>
               <TableCell>{r.author ?? 'Amazon Customer'}</TableCell>
               <TableCell>
