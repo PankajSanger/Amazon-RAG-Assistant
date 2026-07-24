@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Loader2, RefreshCw, Send, Sparkles, Trash2 } from 'lucide-react'
 import type { UseMutationResult } from '@tanstack/react-query'
@@ -53,6 +53,7 @@ export function AskExperience<TSource>({
 }) {
   const [query, setQuery] = useState('')
   const [exchanges, setExchanges] = useState<Exchange<TSource>[]>(() => loadHistory<TSource>(storageKey))
+  const conversationRef = useRef<HTMLDivElement>(null)
 
   const ask = useAsk()
   const reindex = useReindex()
@@ -60,6 +61,39 @@ export function AskExperience<TSource>({
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(exchanges))
   }, [storageKey, exchanges])
+
+  // Without this, a new question's answer renders below the fold with no
+  // visual sign anything happened - the input just clears, which reads as
+  // "nothing is happening" rather than "scroll down". Polls scrollHeight
+  // every frame until it's stayed the same for 2 consecutive frames (i.e.
+  // layout - fonts, source cards, everything - has actually settled) before
+  // scrolling, rather than guessing at a fixed delay. Instant (not smooth)
+  // scrolling is deliberate: a status transition (pending -> done) fires
+  // this effect again, and a second smooth scrollTo() would interrupt an
+  // in-progress one before it reaches the bottom.
+  useEffect(() => {
+    const container = conversationRef.current
+    if (!container) return
+
+    let rafId: number
+    let lastHeight = -1
+    let stableFrames = 0
+
+    function tick() {
+      const height = container!.scrollHeight
+      stableFrames = height === lastHeight ? stableFrames + 1 : 0
+      lastHeight = height
+
+      if (stableFrames >= 2) {
+        container!.scrollTo({ top: height, behavior: 'instant' })
+        return
+      }
+      rafId = requestAnimationFrame(tick)
+    }
+
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [exchanges])
 
   function clearHistory() {
     setExchanges([])
@@ -121,7 +155,7 @@ export function AskExperience<TSource>({
         }
       />
 
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div ref={conversationRef} className="flex-1 overflow-y-auto pr-1">
         {exchanges.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15 text-primary">
