@@ -7,6 +7,14 @@ export function useStats() {
   return useQuery({ queryKey: ['stats'], queryFn: api.getStats })
 }
 
+export function useProducts() {
+  return useQuery({ queryKey: ['products'], queryFn: api.getProducts })
+}
+
+export function useReviews() {
+  return useQuery({ queryKey: ['reviews'], queryFn: api.getReviews })
+}
+
 export function useAskProducts() {
   return useMutation({ mutationFn: api.askProducts })
 }

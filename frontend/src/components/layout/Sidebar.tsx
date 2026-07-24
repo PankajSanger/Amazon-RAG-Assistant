@@ -1,11 +1,12 @@
 import { NavLink } from 'react-router-dom'
-import { LayoutDashboard, PackageSearch, MessagesSquare, Sparkles, ShoppingBag } from 'lucide-react'
+import { LayoutDashboard, PackageSearch, MessagesSquare, Sparkles, ShoppingBag, Table2 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/scrape', label: 'Scrape Data', icon: PackageSearch, end: false },
+  { to: '/browse', label: 'Browse Data', icon: Table2, end: false },
   { to: '/ask/products', label: 'Ask Products', icon: ShoppingBag, end: false },
   { to: '/ask/reviews', label: 'Ask Reviews', icon: MessagesSquare, end: false },
 ]

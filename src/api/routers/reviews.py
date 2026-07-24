@@ -1,19 +1,16 @@
-import pandas as pd
 from fastapi import APIRouter, HTTPException
 
 from src.rag.pipeline import load_environment, review_rag_pipeline, reindex_reviews
 from src.storage.database import load_reviews
 from src.api.schemas import AskRequest, AskResponse, ReindexResponse
+from src.api.utils import records
 
 router = APIRouter(prefix="/api", tags=["reviews"])
 
 
 @router.get("/reviews")
 def list_reviews():
-    df = load_reviews()
-    if df.empty:
-        return []
-    return df.where(pd.notnull(df), None).to_dict("records")
+    return records(load_reviews())
 
 
 @router.post("/reviews/reindex", response_model=ReindexResponse)

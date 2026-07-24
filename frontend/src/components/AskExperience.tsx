@@ -1,6 +1,6 @@
-import { type FormEvent, type ReactNode, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { Loader2, RefreshCw, Send, Sparkles } from 'lucide-react'
+import { Loader2, RefreshCw, Send, Sparkles, Trash2 } from 'lucide-react'
 import type { UseMutationResult } from '@tanstack/react-query'
 
 import type { AskResponse, ReindexResponse } from '@/api/types'
@@ -19,11 +19,25 @@ interface Exchange<TSource> {
   error?: string
 }
 
+function loadHistory<TSource>(storageKey: string): Exchange<TSource>[] {
+  try {
+    const raw = localStorage.getItem(storageKey)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as Exchange<TSource>[]
+    // Drop anything that was still "pending" when the page closed - there's
+    // no in-flight request to resolve it anymore.
+    return parsed.filter((ex) => ex.status !== 'pending')
+  } catch {
+    return []
+  }
+}
+
 export function AskExperience<TSource>({
   title,
   description,
   placeholder,
   suggestions,
+  storageKey,
   useAsk,
   useReindex,
   renderSource,
@@ -32,15 +46,25 @@ export function AskExperience<TSource>({
   description: string
   placeholder: string
   suggestions: string[]
+  storageKey: string
   useAsk: () => UseMutationResult<AskResponse<TSource>, Error, string>
   useReindex: () => UseMutationResult<ReindexResponse, Error, void>
   renderSource: (source: TSource, key: number) => ReactNode
 }) {
   const [query, setQuery] = useState('')
-  const [exchanges, setExchanges] = useState<Exchange<TSource>[]>([])
+  const [exchanges, setExchanges] = useState<Exchange<TSource>[]>(() => loadHistory<TSource>(storageKey))
 
   const ask = useAsk()
   const reindex = useReindex()
+
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(exchanges))
+  }, [storageKey, exchanges])
+
+  function clearHistory() {
+    setExchanges([])
+    localStorage.removeItem(storageKey)
+  }
 
   function submit(question: string) {
     const trimmed = question.trim()
@@ -82,10 +106,18 @@ export function AskExperience<TSource>({
         title={title}
         description={description}
         action={
-          <Button variant="secondary" onClick={handleReindex} disabled={reindex.isPending}>
-            {reindex.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
-            Rebuild Index
-          </Button>
+          <div className="flex items-center gap-2">
+            {exchanges.length > 0 && (
+              <Button variant="ghost" onClick={clearHistory} title="Clear conversation">
+                <Trash2 />
+                Clear
+              </Button>
+            )}
+            <Button variant="secondary" onClick={handleReindex} disabled={reindex.isPending}>
+              {reindex.isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+              Rebuild Index
+            </Button>
+          </div>
         }
       />
 

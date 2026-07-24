@@ -15,6 +15,7 @@ export function AskProducts() {
       description="Query scraped product titles, prices, ratings and descriptions."
       placeholder="Ask a question about the scraped products..."
       suggestions={SUGGESTIONS}
+      storageKey="ask-products-history"
       useAsk={useAskProducts}
       useReindex={useReindexProducts}
       renderSource={(source, key) => <ProductSourceCard key={key} source={source} />}

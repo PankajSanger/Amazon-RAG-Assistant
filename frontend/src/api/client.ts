@@ -1,8 +1,10 @@
 import type {
   AskResponse,
   CreateScrapeJobParams,
+  Product,
   ProductSource,
   ReindexResponse,
+  Review,
   ReviewSource,
   ScrapeJobStatusResponse,
   StatsResponse,
@@ -28,6 +30,14 @@ async function handle<T>(res: Response): Promise<T> {
 
 export function getStats() {
   return fetch(`${API_BASE}/stats`).then((res) => handle<StatsResponse>(res))
+}
+
+export function getProducts() {
+  return fetch(`${API_BASE}/products`).then((res) => handle<Product[]>(res))
+}
+
+export function getReviews() {
+  return fetch(`${API_BASE}/reviews`).then((res) => handle<Review[]>(res))
 }
 
 export function askProducts(query: string) {

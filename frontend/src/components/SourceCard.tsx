@@ -1,4 +1,4 @@
-import { Star } from 'lucide-react'
+import { ExternalLink, Star } from 'lucide-react'
 
 import type { ProductSource, ReviewSource } from '@/api/types'
 import { Badge } from '@/components/ui/badge'
@@ -17,6 +17,17 @@ export function ProductSourceCard({ source }: { source: ProductSource }) {
         {source.no_of_ratings != null && <span>{source.no_of_ratings} ratings</span>}
         {source.price != null && <Badge variant="outline">₹{source.price}</Badge>}
       </div>
+      {source.url && (
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          View on Amazon
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
     </div>
   )
 }
@@ -37,6 +48,17 @@ export function ReviewSourceCard({ source }: { source: ReviewSource }) {
         {source.date && <span>{source.date}</span>}
         {source.asin && <Badge variant="outline">{source.asin}</Badge>}
       </div>
+      {source.url && (
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 flex items-center gap-1 text-xs text-primary hover:underline"
+        >
+          View on Amazon
+          <ExternalLink className="h-3 w-3" />
+        </a>
+      )}
     </div>
   )
 }

@@ -64,6 +64,7 @@ def document_loader(data):
         meta = {
             "asin": str(data['asin'].iloc[row]),
             "title": str(data['title'].iloc[row]),
+            "url": str(data['url'].iloc[row]),
         }
 
         #Chroma metadata values must be str/int/float/bool - omit fields that
@@ -159,6 +160,7 @@ def _reindex_collection(embedding_model, load_data_fn, document_loader_fn, id_fn
         raise ValueError(empty_error)
 
     documents = document_loader_fn(data)
+    ids = id_fn(documents)
 
     store = Chroma(
         collection_name=collection_name,
@@ -166,7 +168,21 @@ def _reindex_collection(embedding_model, load_data_fn, document_loader_fn, id_fn
         persist_directory=RAG_DIR
     )
 
-    store.add_documents(documents=documents, ids=id_fn(documents))
+    #Purge rows no longer in the source data (deleted/replaced products,
+    #or leftovers from earlier indexing schemes/ids) - otherwise stale
+    #documents keep surfacing in retrieval indefinitely.
+    existing_ids = store.get(include=[])["ids"]
+    stale_ids = set(existing_ids) - set(ids)
+    if stale_ids:
+        store.delete(ids=list(stale_ids))
+
+    #Chroma's add() silently skips ids that already exist rather than
+    #updating their metadata/content, so a plain add_documents() here
+    #would never actually refresh previously-indexed rows. Delete first
+    #for real upsert semantics - delete() no-ops on ids that don't
+    #already exist, so first-time indexing is unaffected.
+    store.delete(ids=ids)
+    store.add_documents(documents=documents, ids=ids)
 
     return len(documents)
 

@@ -10,6 +10,7 @@ from src.scrapers.product_page import scrape_products
 from src.scrapers.keyword_search import search_scrape
 from src.scrapers.reviews import scrape_reviews
 from src.storage.database import save_products, save_reviews
+from src.api.utils import records
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +54,9 @@ def _update(job_id, **fields):
 
 
 def _preview(df):
-    if df is None or df.empty:
+    if df is None:
         return []
-    return df.head(PREVIEW_ROWS).where(pd.notnull(df.head(PREVIEW_ROWS)), None).to_dict("records")
+    return records(df.head(PREVIEW_ROWS))
 
 
 def start_job(job_id, params):

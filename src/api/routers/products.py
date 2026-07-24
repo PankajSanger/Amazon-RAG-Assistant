@@ -1,22 +1,16 @@
-import pandas as pd
 from fastapi import APIRouter, HTTPException
 
 from src.rag.pipeline import load_environment, rag_pipeline, reindex_products
 from src.storage.database import load_products, load_reviews
 from src.api.schemas import AskRequest, AskResponse, ReindexResponse, StatsResponse
+from src.api.utils import records
 
 router = APIRouter(prefix="/api", tags=["products"])
 
 
-def _records(df):
-    if df.empty:
-        return []
-    return df.where(pd.notnull(df), None).to_dict("records")
-
-
 @router.get("/products")
 def list_products():
-    return _records(load_products())
+    return records(load_products())
 
 
 @router.get("/stats", response_model=StatsResponse)
@@ -63,6 +57,7 @@ def ask_products(request: AskRequest):
             "rating": doc.metadata.get("rating"),
             "no_of_ratings": doc.metadata.get("no_of_ratings"),
             "price": doc.metadata.get("price"),
+            "url": doc.metadata.get("url"),
         }
         for doc in docs
     ]
