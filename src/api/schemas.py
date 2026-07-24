@@ -51,3 +51,7 @@ class ClearDatabaseRequest(BaseModel):
 class ClearDatabaseResponse(BaseModel):
     products_cleared: int
     reviews_cleared: int
+
+
+class UploadCookiesResponse(BaseModel):
+    cookie_count: int

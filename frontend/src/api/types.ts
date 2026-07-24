@@ -83,3 +83,7 @@ export interface ClearDatabaseResponse {
   products_cleared: number
   reviews_cleared: number
 }
+
+export interface UploadCookiesResponse {
+  cookie_count: number
+}

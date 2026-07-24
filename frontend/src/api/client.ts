@@ -9,6 +9,7 @@ import type {
   ReviewSource,
   ScrapeJobStatusResponse,
   StatsResponse,
+  UploadCookiesResponse,
 } from './types'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? '/api'
@@ -99,4 +100,14 @@ export function clearDatabase(password: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ password }),
   }).then((res) => handle<ClearDatabaseResponse>(res))
+}
+
+export function uploadCookies(password: string, file: File) {
+  const form = new FormData()
+  form.append('password', password)
+  form.append('file', file)
+
+  return fetch(`${API_BASE}/admin/upload-cookies`, { method: 'POST', body: form }).then((res) =>
+    handle<UploadCookiesResponse>(res),
+  )
 }

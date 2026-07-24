@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { AlertTriangle, Download, Loader2, PlayCircle, Trash2 } from 'lucide-react'
+import { AlertTriangle, Download, KeyRound, Loader2, PlayCircle, Trash2, UploadCloud } from 'lucide-react'
 
-import { useClearDatabase, useCreateScrapeJob, useScrapeJobStatus } from '@/api/hooks'
+import { useClearDatabase, useCreateScrapeJob, useScrapeJobStatus, useUploadCookies } from '@/api/hooks'
 import { scrapeJobDownloadUrl } from '@/api/client'
 import type { ScrapeInputType } from '@/api/types'
 import { PageHeader } from '@/components/PageHeader'
@@ -227,8 +227,82 @@ export function ScrapeData() {
         </div>
       </div>
 
+      <SessionCard />
       <DangerZone />
     </div>
+  )
+}
+
+function SessionCard() {
+  const [password, setPassword] = useState('')
+  const [file, setFile] = useState<File | null>(null)
+  const uploadCookies = useUploadCookies()
+
+  const canSubmit = password.length > 0 && file !== null
+
+  function handleUpload() {
+    if (!canSubmit || !file) return
+
+    uploadCookies.mutate(
+      { password, file },
+      {
+        onSuccess: (data) => {
+          toast.success(`Session updated (${data.cookie_count} cookies). Review scraping should work again.`)
+          setPassword('')
+          setFile(null)
+        },
+        onError: (err) => {
+          toast.error(err.message)
+          setPassword('')
+        },
+      },
+    )
+  }
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-4 w-4 text-muted-foreground" />
+          <CardTitle>Amazon Session</CardTitle>
+        </div>
+        <CardDescription>
+          Customer review scraping needs a signed-in Amazon session, and it expires after a while - when
+          reviews stop loading, run <code className="rounded bg-muted px-1 py-0.5 text-xs">python -m
+          src.scrapers.login</code> on your own machine (it opens a real browser for you to log in, since
+          Amazon may require solving a CAPTCHA or 2FA by hand), then upload the resulting
+          <code className="rounded bg-muted px-1 py-0.5 text-xs">data/amazon_cookies.pkl</code> file here to
+          push it to the live site.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-end">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="session-password">Admin password</Label>
+          <Input
+            id="session-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="sm:w-56"
+            autoComplete="off"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="session-file">Cookie file (amazon_cookies.pkl)</Label>
+          <Input
+            id="session-file"
+            type="file"
+            accept=".pkl"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="sm:w-64"
+          />
+        </div>
+        <Button disabled={!canSubmit || uploadCookies.isPending} onClick={handleUpload}>
+          {uploadCookies.isPending ? <Loader2 className="animate-spin" /> : <UploadCloud />}
+          Upload Session
+        </Button>
+      </CardContent>
+    </Card>
   )
 }
 

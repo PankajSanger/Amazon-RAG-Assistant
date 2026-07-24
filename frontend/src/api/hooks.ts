@@ -68,3 +68,9 @@ export function useClearDatabase() {
     },
   })
 }
+
+export function useUploadCookies() {
+  return useMutation({
+    mutationFn: ({ password, file }: { password: string; file: File }) => api.uploadCookies(password, file),
+  })
+}
