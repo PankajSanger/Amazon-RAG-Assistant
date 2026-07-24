@@ -13,7 +13,7 @@ import {
 
 import { cn } from '@/lib/utils'
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard, end: true },
   { to: '/scrape', label: 'Scrape Data', icon: PackageSearch, end: false },
   { to: '/browse', label: 'Browse Data', icon: Table2, end: false },
@@ -89,10 +89,6 @@ export function Sidebar({ mobileOpen, onCloseMobile }: { mobileOpen: boolean; on
             </NavLink>
           ))}
         </nav>
-
-        <div className={cn('border-t border-sidebar-border px-6 py-4', collapsed && 'md:hidden')}>
-          <p className="text-xs text-muted-foreground">Scraping &middot; RAG &middot; Guardrails</p>
-        </div>
       </aside>
     </>
   )

@@ -143,7 +143,7 @@ export function AskExperience<TSource>({
   }
 
   return (
-    <div className="flex h-[calc(100vh-5rem)] flex-col">
+    <div className="flex h-full flex-col">
       <PageHeader
         title={title}
         description={description}

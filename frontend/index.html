@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Amazon Product & Review Intelligence</title>
+    <script>
+      // Applied before first paint so switching themes never flashes the
+      // wrong palette - React only takes over from here, it doesn't decide it.
+      (function () {
+        var stored = localStorage.getItem('theme')
+        var theme = stored === 'dark' || stored === 'light'
+          ? stored
+          : (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+        document.documentElement.classList.toggle('light', theme === 'light')
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
