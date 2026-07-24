@@ -57,7 +57,7 @@ def document_loader(data):
     def content(data, row):
         title = str(data['title'].iloc[row])
         about = str(data['about'].iloc[row])
-        return f"""hair oil product title : {title},
+        return f"""product title : {title},
         product details = {about}"""
 
     def metadata(data, row):
