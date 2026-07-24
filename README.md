@@ -158,6 +158,14 @@ docker compose up --build
 ```
 Open `http://localhost:8000`. `data/` and `chroma_store/` are bind-mounted, so the SQLite DB, Chroma vector store, and `data/amazon_cookies.pkl` are shared with your local setup — scrape via the local Streamlit/React flow or the containerized one interchangeably.
 
+The app container's logs are capped (`max-size: 10m`, `max-file: 5` — see `docker-compose.yml`) so they can't silently fill the host's disk over time, and it restarts automatically (`restart: unless-stopped`) if it crashes or the host reboots.
+
+### Backups
+`scripts/backup.sh` tars `data/` + `chroma_store/` into a timestamped archive under `backups/`, keeping the last 7. It protects against application-level data loss (a bad reindex, accidental deletion) — **not** total instance/volume loss, since backups live on the same disk as the data. Run it manually, or on a deployed host, schedule it nightly via cron:
+```bash
+(crontab -l 2>/dev/null; echo "0 2 * * * $HOME/app/scripts/backup.sh >> $HOME/app/backups/backup.log 2>&1") | crontab -
+```
+
 ---
 
 ## 🖥️ Using the App

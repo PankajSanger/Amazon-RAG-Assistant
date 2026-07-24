@@ -12,6 +12,11 @@ services:
     volumes:
       - ./data:/app/data
       - ./chroma_store:/app/chroma_store
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
 
 secrets:
   guardrails_token:

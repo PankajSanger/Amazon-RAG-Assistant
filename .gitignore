@@ -6,6 +6,7 @@ __pycache__/
 # Local data & credentials — never commit these
 data/
 chroma_store/
+backups/
 ~$*.xlsx
 
 # deepeval local cache/telemetry
